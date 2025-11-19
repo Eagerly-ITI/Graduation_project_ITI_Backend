@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'apps.reviews',
     'apps.chats',
     'apps.reports',
+    'apps.chatbot',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +81,7 @@ USE_TZ = True
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+OPENAI_API_KEY = "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"
 
 AUTH_USER_MODEL = 'users.User'
 
