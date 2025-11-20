@@ -2,10 +2,10 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv()
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'replace-this-secret-key')
 DEBUG = True
 ALLOWED_HOSTS = ['*']
-load_dotenv()
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -70,6 +70,29 @@ DATABASES = {
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
+
+# Allow configuring the database via a single DATABASE_URL environment variable
+# e.g. postgres://user:pass@host:port/dbname?sslmode=require
+import urllib.parse as urlparse
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    url = urlparse.urlparse(DATABASE_URL)
+    db_name = url.path[1:] if url.path and len(url.path) > 1 else ''
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_name,
+            'USER': url.username,
+            'PASSWORD': url.password,
+            'HOST': url.hostname,
+            'PORT': url.port,
+        }
+    }
+    # parse query string for additional options like sslmode
+    qs = dict(urlparse.parse_qsl(url.query))
+    if 'sslmode' in qs:
+        DATABASES['default']['OPTIONS'] = {'sslmode': qs['sslmode']}
 
 AUTH_PASSWORD_VALIDATORS = []
 
