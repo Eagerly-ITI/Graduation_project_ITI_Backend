@@ -1,11 +1,17 @@
 import os
-from dotenv import load_dotenv
+import json
 from pathlib import Path
+from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
+
+# Basic flags
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'replace-this-secret-key')
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+# Environment mode (set to 'True' in Cloud Run/production)
+DJANGO_PRODUCTION = os.environ.get('DJANGO_PRODUCTION', 'False') == 'True'
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -28,6 +34,10 @@ INSTALLED_APPS = [
     'apps.reports',
     'apps.chatbot',
 ]
+
+# Add storages app when using cloud storage
+if DJANGO_PRODUCTION:
+    INSTALLED_APPS.append('storages')
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -103,8 +113,31 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+# Media configuration: local by default, Google Cloud Storage in production
+if DJANGO_PRODUCTION:
+    # Use django-storages with Google Cloud Storage
+    DEFAULT_FILE_STORAGE = os.environ.get('DEFAULT_FILE_STORAGE', 'storages.backends.gcloud.GoogleCloudStorage')
+    GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME')
+    GS_PROJECT_ID = os.environ.get('GS_PROJECT_ID')
+    GS_DEFAULT_ACL = 'publicRead'
+    # Allow providing credentials via JSON in env var or via GOOGLE_APPLICATION_CREDENTIALS
+    GS_CREDENTIALS_JSON = os.environ.get('GS_CREDENTIALS_JSON')
+    if GS_CREDENTIALS_JSON:
+        try:
+            from google.oauth2 import service_account
+            creds_info = json.loads(GS_CREDENTIALS_JSON)
+            GS_CREDENTIALS = service_account.Credentials.from_service_account_info(creds_info)
+        except Exception:
+            GS_CREDENTIALS = None
+    else:
+        GS_CREDENTIALS = None
+
+    MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
+    MEDIA_ROOT = os.path.join(str(BASE_DIR), 'media')
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.normpath(str(BASE_DIR / 'media'))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 AUTH_USER_MODEL = 'users.User'
