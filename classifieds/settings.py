@@ -138,7 +138,11 @@ if DJANGO_PRODUCTION:
 else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.normpath(str(BASE_DIR / 'media'))
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Always expose GS_BUCKET_NAME to the app so URL fallback can use it
+GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME')
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = "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"
+
 
 AUTH_USER_MODEL = 'users.User'
 
